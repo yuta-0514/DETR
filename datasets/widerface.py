@@ -48,9 +48,6 @@ class ConvertCocoPolysToMask(object):
     def __call__(self, image, target):
         w, h = image.size
 
-        image_id = target["image_id"]
-        # image_id = torch.tensor([image_id])
-
         _anno = target["annotations"]
         anno = []
         anno.append(_anno)
@@ -74,30 +71,17 @@ class ConvertCocoPolysToMask(object):
             segmentations = [obj["segmentation"] for obj in anno]
             masks = convert_coco_poly_to_mask(segmentations, h, w)
 
-        keypoints = None
-        if anno and "keypoints" in anno[0]:
-            keypoints = [obj["keypoints"] for obj in anno]
-            keypoints = torch.as_tensor(keypoints, dtype=torch.float32)
-            num_keypoints = keypoints.shape[0]
-            if num_keypoints:
-                keypoints = keypoints.view(num_keypoints, -1, 3)
-
         keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
         boxes = boxes[keep]
         classes = classes[keep]
         if self.return_masks:
             masks = masks[keep]
-        if keypoints is not None:
-            keypoints = keypoints[keep]
 
         target = {}
         target["boxes"] = boxes
         target["labels"] = classes
         if self.return_masks:
             target["masks"] = masks
-        # target["image_id"] = image_id
-        if keypoints is not None:
-            target["keypoints"] = keypoints
 
         target["orig_size"] = torch.as_tensor([int(h), int(w)])
         target["size"] = torch.as_tensor([int(h), int(w)])
